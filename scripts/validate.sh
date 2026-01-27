@@ -13,6 +13,9 @@ if [ -d ".venv" ] && [ -z "$VIRTUAL_ENV" ]; then
     source .venv/bin/activate
 fi
 
+# Configuration
+MIN_SAMPLE_IMAGES=3
+
 # Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -70,7 +73,7 @@ fi
 
 # Test 5: Check sample images
 echo -n "Testing sample images... "
-if [ -d "sample_images" ] && [ "$(ls -A sample_images/*.jpg 2>/dev/null | wc -l)" -ge 3 ]; then
+if [ -d "sample_images" ] && [ "$(ls -A sample_images/*.jpg 2>/dev/null | wc -l)" -ge "$MIN_SAMPLE_IMAGES" ]; then
     echo -e "${GREEN}✓${NC} Sample images present"
     ((PASSED++))
 else

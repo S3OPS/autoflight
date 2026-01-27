@@ -55,6 +55,14 @@ fi
 PYTHON_VERSION=$(python3 --version | cut -d' ' -f2)
 info "Found Python $PYTHON_VERSION"
 
+# Check minimum Python version (3.8+)
+PYTHON_MAJOR=$(echo $PYTHON_VERSION | cut -d. -f1)
+PYTHON_MINOR=$(echo $PYTHON_VERSION | cut -d. -f2)
+if [ "$PYTHON_MAJOR" -lt 3 ] || ([ "$PYTHON_MAJOR" -eq 3 ] && [ "$PYTHON_MINOR" -lt 8 ]); then
+    error "Python 3.8 or higher is required. Found $PYTHON_VERSION"
+    exit 1
+fi
+
 # Step 2: Create virtual environment
 if [ ! -d ".venv" ]; then
     info "Creating virtual environment..."

@@ -13,8 +13,8 @@ authors = [
     {name = "Autoflight Contributors"}
 ]
 dependencies = [
-    "opencv-python==4.9.0.80",
-    "numpy==1.26.4",
+    "opencv-python>=4.9.0,<5.0",
+    "numpy>=1.26.0,<2.0",
 ]
 
 [project.optional-dependencies]

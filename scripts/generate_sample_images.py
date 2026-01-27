@@ -7,13 +7,16 @@ from pathlib import Path
 import cv2
 import numpy as np
 
+# Use a fixed seed for reproducible sample image generation
+RANDOM_SEED = 42
+
 
 def generate_sample_images(output_dir: Path, num_images: int = 3) -> None:
     """Generate sample overlapping images for stitching demo."""
     output_dir.mkdir(parents=True, exist_ok=True)
     
     # Create a base pattern image
-    rng = np.random.default_rng(42)
+    rng = np.random.default_rng(RANDOM_SEED)
     base_img = rng.integers(50, 200, size=(400, 600, 3), dtype=np.uint8)
     
     # Add some distinctive patterns
