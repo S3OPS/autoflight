@@ -22,10 +22,10 @@ def _install_package(package_name: str) -> None:
     Args:
         package_name: Package specification (from hardcoded dependencies dict only).
     """
+    # Only silence stdout, keep stderr for error messages
     subprocess.check_call(
         [sys.executable, "-m", "pip", "install", package_name, "--quiet"],
         stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
     )
 
 
