@@ -275,12 +275,23 @@ If stitching fails:
 - Check that images are from the same scene/location
 - Verify images are not too different in brightness or scale
 
+## Roadmap
+
+See [THE_ONE_RING.md](THE_ONE_RING.md) for the comprehensive development roadmap covering:
+- 🚀 **Optimization** - Performance improvements
+- 🏕️ **Refactoring** - Code organization
+- 🧝 **Modularization** - Component separation
+- 🔍 **Security Audit** - Vulnerability assessment
+- ⚔️ **Enhancements** - Feature upgrades
+
 ## Contributing
 
 Contributions are welcome! Please ensure:
 - Tests pass: `make test`
 - Code is formatted: `make format`
 - Linting passes: `make lint`
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
 
 ## License
 
