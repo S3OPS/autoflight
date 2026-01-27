@@ -12,17 +12,6 @@ license = {text = "MIT"}
 authors = [
     {name = "Autoflight Contributors"}
 ]
-classifiers = [
-    "Development Status :: 4 - Beta",
-    "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-]
 dependencies = [
     "opencv-python==4.9.0.80",
     "numpy==1.26.4",
@@ -39,6 +28,11 @@ dev = [
 
 [project.scripts]
 autoflight = "autoflight.orthomosaic:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["autoflight*"]
+exclude = ["tests*", "scripts*", "sample_images*"]
 
 [tool.black]
 line-length = 100
