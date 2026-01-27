@@ -12,9 +12,24 @@ A professional-grade Python application for generating orthomosaic images from a
 
 ## Quick Start
 
+### Zero-Setup Run (Auto-Install Dependencies)
+
+The easiest way to get started - just run it:
+
+```bash
+python -m autoflight.orthomosaic /path/to/images output.jpg
+```
+
+**No installation required!** Dependencies (OpenCV, NumPy) are automatically installed on first run.
+
+To disable auto-install (e.g., in production):
+```bash
+export AUTOFLIGHT_NO_AUTO_INSTALL=1
+```
+
 ### One-Command Setup and Run
 
-The fastest way to get started:
+For a complete setup with virtual environment:
 
 ```bash
 ./bootstrap.sh
@@ -143,10 +158,29 @@ autoflight/
 ## Requirements
 
 - Python 3.8 or higher
-- OpenCV (opencv-python)
-- NumPy
+- OpenCV (opencv-python) - **Auto-installed on first run**
+- NumPy - **Auto-installed on first run**
 
-Dependencies are automatically installed during setup.
+### Auto-Installation Feature
+
+Autoflight automatically installs required dependencies when you first import or run the module. This means you can:
+
+1. **Just run it** - No need to manually install dependencies
+2. **Skip setup** - Dependencies are installed automatically when needed
+3. **Stay in control** - Set `AUTOFLIGHT_NO_AUTO_INSTALL=1` to disable auto-install
+
+The auto-install feature:
+- ✅ Checks for dependencies only once (cached)
+- ✅ Only installs what's missing
+- ✅ Silent when dependencies are already present
+- ✅ Can be disabled for production/CI environments
+
+To manually install dependencies (traditional approach):
+```bash
+pip install opencv-python numpy
+# or
+pip install -r requirements.txt
+```
 
 ## How It Works
 
