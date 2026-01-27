@@ -15,6 +15,11 @@ from autoflight.image_loader import (
 )
 from autoflight.stitcher import stitch_images
 from autoflight.output import save_image
+from autoflight.exceptions import (
+    ImageLoadError,
+    ValidationError,
+    StitchingError,
+)
 
 
 def _write_image(path: Path, image: np.ndarray) -> None:
@@ -49,8 +54,8 @@ class TestImageLoader(unittest.TestCase):
             # Should not raise for existing directory
             validate_path(temp_path, must_exist=True, must_be_dir=True)
             
-            # Should raise for non-existent path
-            with self.assertRaises(ValueError):
+            # Should raise ValidationError for non-existent path
+            with self.assertRaises(ValidationError):
                 validate_path(temp_path / "nonexistent", must_exist=True)
     
     def test_load_single_image(self) -> None:
@@ -67,7 +72,7 @@ class TestImageLoader(unittest.TestCase):
     
     def test_load_single_image_failure(self) -> None:
         """Test loading non-existent image fails."""
-        with self.assertRaises(ValueError):
+        with self.assertRaises((ImageLoadError, ValidationError)):
             load_single_image(Path("/nonexistent/image.jpg"))
     
     def test_load_images_sequential(self) -> None:
@@ -95,7 +100,7 @@ class TestImageLoader(unittest.TestCase):
         """Test loading from empty directory fails."""
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
-            with self.assertRaises(ValueError):
+            with self.assertRaises(ImageLoadError):
                 load_images(temp_path)
     
     def test_load_images_filters_non_images(self) -> None:
@@ -121,7 +126,7 @@ class TestStitcher(unittest.TestCase):
     
     def test_stitch_images_empty(self) -> None:
         """Test stitching with no images fails."""
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValidationError):
             stitch_images([])
     
     def test_stitch_images_multiple(self) -> None:
@@ -139,7 +144,7 @@ class TestStitcher(unittest.TestCase):
     def test_stitch_images_invalid_mode(self) -> None:
         """Test stitching with invalid mode fails."""
         image = _create_test_image()
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValidationError):
             stitch_images([image, image], mode="invalid")
 
 
@@ -173,7 +178,7 @@ class TestOutput(unittest.TestCase):
             output_path = temp_path / "nonexistent" / "output.jpg"
             image = _create_test_image()
             
-            with self.assertRaises(ValueError):
+            with self.assertRaises(ValidationError):
                 save_image(image, output_path, create_dirs=False)
     
     def test_save_image_empty_fails(self) -> None:
@@ -182,8 +187,19 @@ class TestOutput(unittest.TestCase):
             temp_path = Path(temp_dir)
             output_path = temp_path / "output.jpg"
             
-            with self.assertRaises(ValueError):
+            with self.assertRaises(ValidationError):
                 save_image(None, output_path)
+    
+    def test_save_image_with_quality(self) -> None:
+        """Test saving an image with custom quality settings."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            output_path = temp_path / "output.jpg"
+            image = _create_test_image()
+            
+            # Test with custom quality
+            save_image(image, output_path, quality=50)
+            self.assertTrue(output_path.exists())
 
 
 if __name__ == "__main__":
