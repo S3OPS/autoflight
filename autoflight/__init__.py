@@ -9,4 +9,4 @@ ensure_dependencies()
 from autoflight.orthomosaic import create_orthomosaic, OrthomosaicResult
 
 __all__ = ["create_orthomosaic", "OrthomosaicResult"]
-__version__ = "1.0.0"
+__version__ = "1.1.0"
