@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import List, Sequence
+from typing import Sequence
 
 import cv2
 import numpy as np

@@ -46,11 +46,13 @@ def create_orthomosaic(
         ValueError: If input is invalid
         RuntimeError: If stitching or saving fails
     """
-    # Configure logging
-    if verbose:
-        logging.basicConfig(level=logging.DEBUG, format="%(levelname)s: %(message)s")
-    else:
-        logging.basicConfig(level=logging.WARNING, format="%(levelname)s: %(message)s")
+    # Configure logging only if not already configured
+    if not logging.getLogger().handlers:
+        level = logging.DEBUG if verbose else logging.WARNING
+        logging.basicConfig(level=level, format="%(levelname)s: %(message)s")
+    elif verbose:
+        # If already configured, just update the level for verbose mode
+        logging.getLogger().setLevel(logging.DEBUG)
     
     # Convert to Path objects
     input_path = Path(input_dir)
