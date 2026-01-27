@@ -52,7 +52,7 @@ def ensure_dependencies() -> None:
     # Define required dependencies (hardcoded for security)
     dependencies = {
         "cv2": "opencv-python>=4.9.0,<5.0",
-        "numpy": "numpy>=1.26.0,<2.0",
+        "numpy": "numpy>=1.26.0",
     }
     
     missing_deps = []

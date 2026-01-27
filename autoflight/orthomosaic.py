@@ -2,73 +2,163 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable, List, Sequence
+from typing import Iterable
 
-import cv2
-import numpy as np
+from autoflight.image_loader import load_images
+from autoflight.output import save_image
+from autoflight.stitcher import stitch_images
 
-
-SUPPORTED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".tif", ".tiff"}
+logger = logging.getLogger(__name__)
 
 
 @dataclass
 class OrthomosaicResult:
+    """Result of orthomosaic creation."""
+    
     output_path: Path
     image_count: int
     size: tuple[int, int]
 
 
-def _load_images(input_dir: Path) -> List[np.ndarray]:
-    images: List[np.ndarray] = []
-    for path in sorted(input_dir.iterdir()):
-        if path.suffix.lower() not in SUPPORTED_EXTENSIONS:
-            continue
-        image = cv2.imread(str(path))
-        if image is None:
-            raise ValueError(f"Failed to load image: {path}")
-        images.append(image)
-    if not images:
-        raise ValueError(f"No supported images found in {input_dir}")
-    return images
-
-
-def _stitch(images: Sequence[np.ndarray]) -> np.ndarray:
-    stitcher = cv2.Stitcher_create(cv2.STITCHER_PANORAMA)
-    status, stitched = stitcher.stitch(list(images))
-    if status != cv2.Stitcher_OK or stitched is None:
-        raise RuntimeError(f"Stitching failed with status {status}")
-    return stitched
-
-
-def create_orthomosaic(input_dir: Path | str, output_path: Path | str) -> OrthomosaicResult:
-    """Create an orthomosaic from images in input_dir and write to output_path."""
+def create_orthomosaic(
+    input_dir: Path | str,
+    output_path: Path | str,
+    parallel: bool = True,
+    verbose: bool = False,
+    mode: str = "panorama",
+) -> OrthomosaicResult:
+    """Create an orthomosaic from images in input_dir and write to output_path.
+    
+    Args:
+        input_dir: Directory containing input images
+        output_path: Path where to save the orthomosaic
+        parallel: Whether to load images in parallel (faster for many images)
+        verbose: Whether to enable verbose logging
+        mode: Stitching mode ("panorama" or "scans")
+        
+    Returns:
+        OrthomosaicResult with information about the created orthomosaic
+        
+    Raises:
+        ValueError: If input is invalid
+        RuntimeError: If stitching or saving fails
+    """
+    # Configure logging only if not already configured
+    if not logging.getLogger().handlers:
+        level = logging.DEBUG if verbose else logging.WARNING
+        logging.basicConfig(level=level, format="%(levelname)s: %(message)s")
+    elif verbose:
+        # If already configured, just update the level for verbose mode
+        logging.getLogger().setLevel(logging.DEBUG)
+    
+    # Convert to Path objects
     input_path = Path(input_dir)
-    output_path = Path(output_path)
-    images = _load_images(input_path)
-    stitched = _stitch(images)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    if not cv2.imwrite(str(output_path), stitched):
-        raise RuntimeError(f"Failed to write output image to {output_path}")
+    output_path_obj = Path(output_path)
+    
+    logger.info(f"Creating orthomosaic from {input_path}")
+    
+    # Load images
+    images = load_images(input_path, parallel=parallel)
+    
+    # Stitch images
+    stitched = stitch_images(images, mode=mode)
+    
+    # Save result
+    save_image(stitched, output_path_obj)
+    
+    # Return result
     height, width = stitched.shape[:2]
-    return OrthomosaicResult(output_path=output_path, image_count=len(images), size=(width, height))
+    result = OrthomosaicResult(
+        output_path=output_path_obj,
+        image_count=len(images),
+        size=(width, height)
+    )
+    
+    logger.info(f"Orthomosaic created successfully: {result.output_path}")
+    return result
 
 
 def main(args: Iterable[str] | None = None) -> int:
+    """Command-line interface for orthomosaic generation.
+    
+    Args:
+        args: Command-line arguments (defaults to sys.argv)
+        
+    Returns:
+        Exit code (0 for success, non-zero for failure)
+    """
     import argparse
+    import sys
 
-    parser = argparse.ArgumentParser(description="Generate an orthomosaic from input images")
-    parser.add_argument("input_dir", type=Path, help="Directory containing input images")
-    parser.add_argument("output_path", type=Path, help="Path to write the orthomosaic image")
-    parsed = parser.parse_args(list(args) if args is not None else None)
-
-    result = create_orthomosaic(parsed.input_dir, parsed.output_path)
-    print(
-        f"Wrote orthomosaic to {result.output_path} "
-        f"using {result.image_count} images ({result.size[0]}x{result.size[1]})."
+    parser = argparse.ArgumentParser(
+        description="Generate an orthomosaic from overlapping aerial images",
+        epilog="Example: %(prog)s /path/to/images output.jpg"
     )
-    return 0
+    parser.add_argument(
+        "input_dir",
+        type=Path,
+        help="Directory containing input images (jpg, jpeg, png, tif, tiff)"
+    )
+    parser.add_argument(
+        "output_path",
+        type=Path,
+        help="Path where to save the orthomosaic image"
+    )
+    parser.add_argument(
+        "--mode",
+        choices=["panorama", "scans"],
+        default="panorama",
+        help="Stitching mode: 'panorama' for standard panoramas, 'scans' for scanned images (default: panorama)"
+    )
+    parser.add_argument(
+        "--no-parallel",
+        action="store_true",
+        help="Disable parallel image loading (slower but uses less memory)"
+    )
+    parser.add_argument(
+        "-v", "--verbose",
+        action="store_true",
+        help="Enable verbose output"
+    )
+    parser.add_argument(
+        "-q", "--quiet",
+        action="store_true",
+        help="Suppress all output except errors"
+    )
+    
+    parsed = parser.parse_args(list(args) if args is not None else None)
+    
+    # Handle quiet mode
+    if parsed.quiet:
+        logging.basicConfig(level=logging.ERROR, format="%(levelname)s: %(message)s")
+    
+    try:
+        result = create_orthomosaic(
+            parsed.input_dir,
+            parsed.output_path,
+            parallel=not parsed.no_parallel,
+            verbose=parsed.verbose,
+            mode=parsed.mode,
+        )
+        
+        if not parsed.quiet:
+            print(
+                f"✓ Orthomosaic created: {result.output_path}\n"
+                f"  Images used: {result.image_count}\n"
+                f"  Size: {result.size[0]}x{result.size[1]} pixels"
+            )
+        
+        return 0
+        
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        if parsed.verbose:
+            import traceback
+            traceback.print_exc()
+        return 1
 
 
 if __name__ == "__main__":

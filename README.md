@@ -5,10 +5,13 @@ A professional-grade Python application for generating orthomosaic images from a
 ## Features
 
 - 🚀 **One-Command Setup** - Install, configure, and run with a single command
+- ⚡ **Performance Optimized** - Parallel image loading for faster processing
 - 🔄 **Automatic Image Stitching** - Seamlessly combines overlapping images into panoramic orthomosaics
 - 📸 **Multiple Format Support** - Works with `.jpg`, `.jpeg`, `.png`, `.tif`, and `.tiff` files
-- 🧪 **Tested & Reliable** - Comprehensive test coverage
+- 🧪 **Tested & Reliable** - Comprehensive test coverage with 22+ tests
 - 🛠️ **Developer Friendly** - Modern Python packaging with type hints and code quality tools
+- 🔒 **Security Focused** - Input validation and secure dependency management
+- 🎯 **Modular Architecture** - Clean separation of concerns for maintainability
 
 ## Quick Start
 
@@ -76,7 +79,17 @@ make help       # Show all available commands
 After installation, you can use the `autoflight` command:
 
 ```bash
+# Basic usage
 autoflight /path/to/input_images /path/to/output/orthomosaic.jpg
+
+# With options
+autoflight /path/to/images output.jpg --verbose --mode panorama
+
+# Disable parallel loading (lower memory usage)
+autoflight /path/to/images output.jpg --no-parallel
+
+# Quiet mode (only show errors)
+autoflight /path/to/images output.jpg --quiet
 ```
 
 Or use the Python module directly:
@@ -85,22 +98,46 @@ Or use the Python module directly:
 python -m autoflight.orthomosaic /path/to/input_images /path/to/output/orthomosaic.jpg
 ```
 
+**CLI Options:**
+- `--mode {panorama,scans}` - Stitching mode (default: panorama)
+- `--no-parallel` - Disable parallel image loading (slower but uses less memory)
+- `-v, --verbose` - Enable verbose output with detailed logging
+- `-q, --quiet` - Suppress all output except errors
+- `-h, --help` - Show help message
+
 ### Python API
 
 You can also use autoflight as a library in your Python code:
 
 ```python
-from autoflight.orthomosaic import create_orthomosaic
+from autoflight import create_orthomosaic
 
+# Basic usage
 result = create_orthomosaic(
     input_dir="path/to/images",
     output_path="path/to/output.jpg"
 )
 
-print(f"Created orthomosaic: {result.output_path}")
-print(f"Used {result.image_count} images")
-print(f"Size: {result.size[0]}x{result.size[1]} pixels")
+# With options for performance and logging
+result = create_orthomosaic(
+    input_dir="path/to/images",
+    output_path="path/to/output.jpg",
+    parallel=True,      # Enable parallel image loading (default)
+    verbose=True,       # Enable detailed logging
+    mode="panorama"     # Stitching mode: "panorama" or "scans"
+)
+
+print(f"✓ Created orthomosaic: {result.output_path}")
+print(f"  Images used: {result.image_count}")
+print(f"  Size: {result.size[0]}x{result.size[1]} pixels")
 ```
+
+**API Parameters:**
+- `input_dir` - Directory containing input images (str or Path)
+- `output_path` - Path where to save the orthomosaic (str or Path)
+- `parallel` - Enable parallel image loading for better performance (default: True)
+- `verbose` - Enable verbose logging (default: False)
+- `mode` - Stitching mode: "panorama" for standard panoramas or "scans" for scanned images (default: "panorama")
 
 ## Development
 
@@ -140,10 +177,16 @@ make lint      # Run linters (flake8, mypy)
 ```
 autoflight/
 ├── autoflight/           # Main package
-│   ├── __init__.py
-│   └── orthomosaic.py    # Core orthomosaic functionality
+│   ├── __init__.py       # Package initialization and exports
+│   ├── _ensure_deps.py   # Auto-dependency installation
+│   ├── orthomosaic.py    # Main orchestration and CLI
+│   ├── image_loader.py   # Image loading with parallel support
+│   ├── stitcher.py       # Image stitching algorithms
+│   └── output.py         # Output file handling
 ├── tests/                # Test suite
-│   └── test_orthomosaic.py
+│   ├── test_orthomosaic.py    # Integration tests
+│   ├── test_auto_install.py   # Auto-install tests
+│   └── test_modules.py        # Unit tests for modules
 ├── scripts/              # Utility scripts
 │   ├── demo.sh          # Demo script
 │   └── generate_sample_images.py
@@ -160,6 +203,8 @@ autoflight/
 - Python 3.8 or higher
 - OpenCV (opencv-python) - **Auto-installed on first run**
 - NumPy - **Auto-installed on first run**
+
+**Note:** Autoflight now supports NumPy 2.x for improved performance and security.
 
 ### Auto-Installation Feature
 
@@ -184,11 +229,21 @@ pip install -r requirements.txt
 
 ## How It Works
 
-1. **Image Loading**: Reads all supported image formats from the input directory
+1. **Image Loading**: Loads all supported image formats from the input directory
+   - Supports parallel loading for improved performance
+   - Validates image paths for security
+   - Filters supported formats (.jpg, .jpeg, .png, .tif, .tiff)
 2. **Feature Detection**: OpenCV identifies matching features across overlapping images
 3. **Image Alignment**: Images are warped and aligned based on detected features
 4. **Blending**: Seamlessly blends overlapping regions to create a smooth panorama
 5. **Output**: Saves the final orthomosaic to the specified output path
+
+## Performance
+
+- **Parallel Image Loading**: By default, images are loaded in parallel using multiple threads
+- **Memory Efficient**: Use `--no-parallel` flag for sequential loading in memory-constrained environments
+- **Optimized Processing**: Efficient image stitching with OpenCV's panorama algorithms
+- **Scalable**: Handles large image sets with configurable worker pools
 
 ## Troubleshooting
 
