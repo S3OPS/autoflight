@@ -1,4 +1,4 @@
-.PHONY: help install install-dev test lint format clean run demo setup all
+.PHONY: help install install-dev test lint format clean run demo setup all validate
 
 # Default target
 help:
@@ -9,6 +9,7 @@ help:
 	@echo "  make install      - Install package dependencies"
 	@echo "  make install-dev  - Install package with dev dependencies"
 	@echo "  make test         - Run tests"
+	@echo "  make validate     - Validate installation"
 	@echo "  make lint         - Run linters"
 	@echo "  make format       - Format code with black"
 	@echo "  make demo         - Run demo with sample images"
@@ -108,3 +109,7 @@ clean:
 
 # Do everything: setup, test, demo
 all: setup test demo
+
+# Validate installation
+validate:
+	@bash scripts/validate.sh
