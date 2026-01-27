@@ -38,33 +38,51 @@ install-dev:
 
 # Run tests
 test:
-	python -m unittest discover -s tests -p "test_*.py"
+	@if [ -d ".venv" ]; then \
+		. .venv/bin/activate && python -m unittest discover -s tests -p "test_*.py"; \
+	else \
+		python -m unittest discover -s tests -p "test_*.py"; \
+	fi
 
 # Run linters (if dev deps installed)
 lint:
-	@if command -v flake8 >/dev/null 2>&1; then \
-		flake8 autoflight tests --max-line-length=100 --ignore=E203,W503; \
+	@if [ -d ".venv" ]; then \
+		. .venv/bin/activate && \
+		if command -v flake8 >/dev/null 2>&1; then \
+			flake8 autoflight tests --max-line-length=100 --ignore=E203,W503; \
+		else \
+			echo "flake8 not installed. Run 'make install-dev' first."; \
+		fi && \
+		if command -v mypy >/dev/null 2>&1; then \
+			mypy autoflight; \
+		else \
+			echo "mypy not installed. Run 'make install-dev' first."; \
+		fi; \
 	else \
-		echo "flake8 not installed. Run 'make install-dev' first."; \
-	fi
-	@if command -v mypy >/dev/null 2>&1; then \
-		mypy autoflight; \
-	else \
-		echo "mypy not installed. Run 'make install-dev' first."; \
+		echo "Virtual environment not found. Run 'make setup' first."; \
 	fi
 
 # Format code
 format:
-	@if command -v black >/dev/null 2>&1; then \
-		black autoflight tests; \
+	@if [ -d ".venv" ]; then \
+		. .venv/bin/activate && \
+		if command -v black >/dev/null 2>&1; then \
+			black autoflight tests; \
+		else \
+			echo "black not installed. Run 'make install-dev' first."; \
+		fi; \
 	else \
-		echo "black not installed. Run 'make install-dev' first."; \
+		echo "Virtual environment not found. Run 'make setup' first."; \
 	fi
 
 # Run demo
 demo:
 	@echo "Running autoflight demo..."
-	@bash scripts/demo.sh
+	@if [ -d ".venv" ]; then \
+		. .venv/bin/activate && bash scripts/demo.sh; \
+	else \
+		bash scripts/demo.sh; \
+	fi
 
 # Run with custom input/output
 run:
@@ -72,7 +90,11 @@ run:
 		echo "Usage: make run INPUT=/path/to/images OUTPUT=/path/to/output.jpg"; \
 		exit 1; \
 	fi
-	python -m autoflight.orthomosaic $(INPUT) $(OUTPUT)
+	@if [ -d ".venv" ]; then \
+		. .venv/bin/activate && python -m autoflight.orthomosaic $(INPUT) $(OUTPUT); \
+	else \
+		python -m autoflight.orthomosaic $(INPUT) $(OUTPUT); \
+	fi
 
 # Clean temporary files
 clean:

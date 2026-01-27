@@ -9,6 +9,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 cd "$PROJECT_ROOT"
 
+# Activate venv if it exists
+if [ -d ".venv" ]; then
+    source .venv/bin/activate
+fi
+
 # Colors
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
