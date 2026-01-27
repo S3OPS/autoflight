@@ -35,7 +35,7 @@ def _load_images(input_dir: Path) -> List[np.ndarray]:
 
 
 def _stitch(images: Sequence[np.ndarray]) -> np.ndarray:
-    stitcher = cv2.Stitcher_create(cv2.Stitcher_PANORAMA)
+    stitcher = cv2.Stitcher_create(cv2.STITCHER_PANORAMA)
     status, stitched = stitcher.stitch(list(images))
     if status != cv2.Stitcher_OK or stitched is None:
         raise RuntimeError(f"Stitching failed with status {status}")
