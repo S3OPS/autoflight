@@ -5,18 +5,31 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable
+from typing import Callable, Iterable, Optional
 
 from autoflight.image_loader import load_images
 from autoflight.output import save_image
 from autoflight.stitcher import stitch_images
+from autoflight.exceptions import AutoflightError
 
 logger = logging.getLogger(__name__)
+
+# Export public API
+__all__ = ["create_orthomosaic", "OrthomosaicResult"]
+
+# Type alias for progress callbacks
+ProgressCallback = Callable[[float, str], None]
 
 
 @dataclass
 class OrthomosaicResult:
-    """Result of orthomosaic creation."""
+    """Result of orthomosaic creation.
+    
+    Attributes:
+        output_path: Path where the orthomosaic was saved
+        image_count: Number of images used in the mosaic
+        size: Tuple of (width, height) in pixels
+    """
     
     output_path: Path
     image_count: int
@@ -29,8 +42,13 @@ def create_orthomosaic(
     parallel: bool = True,
     verbose: bool = False,
     mode: str = "panorama",
+    quality: int = 95,
+    progress_callback: Optional[ProgressCallback] = None,
 ) -> OrthomosaicResult:
     """Create an orthomosaic from images in input_dir and write to output_path.
+    
+    This is the main API function for creating orthomosaics. It handles the complete
+    pipeline: loading images, stitching them together, and saving the result.
     
     Args:
         input_dir: Directory containing input images
@@ -38,13 +56,23 @@ def create_orthomosaic(
         parallel: Whether to load images in parallel (faster for many images)
         verbose: Whether to enable verbose logging
         mode: Stitching mode ("panorama" or "scans")
+        quality: JPEG quality setting (1-100, default: 95)
+        progress_callback: Optional callback for progress reporting.
+            Called with (progress: float, message: str) where progress is 0.0 to 1.0.
         
     Returns:
         OrthomosaicResult with information about the created orthomosaic
         
     Raises:
-        ValueError: If input is invalid
-        RuntimeError: If stitching or saving fails
+        ValidationError: If input is invalid
+        ImageLoadError: If image loading fails
+        StitchingError: If stitching fails
+        OutputError: If saving fails
+        
+    Example:
+        >>> from autoflight import create_orthomosaic
+        >>> result = create_orthomosaic("path/to/images", "output.jpg")
+        >>> print(f"Created {result.size[0]}x{result.size[1]} mosaic from {result.image_count} images")
     """
     # Configure logging only if not already configured
     if not logging.getLogger().handlers:
@@ -60,14 +88,23 @@ def create_orthomosaic(
     
     logger.info(f"Creating orthomosaic from {input_path}")
     
+    if progress_callback:
+        progress_callback(0.0, "Starting orthomosaic creation...")
+    
     # Load images
-    images = load_images(input_path, parallel=parallel)
+    images = load_images(input_path, parallel=parallel, progress_callback=progress_callback)
     
     # Stitch images
-    stitched = stitch_images(images, mode=mode)
+    stitched = stitch_images(images, mode=mode, progress_callback=progress_callback)
+    
+    if progress_callback:
+        progress_callback(0.95, "Saving output...")
     
     # Save result
-    save_image(stitched, output_path_obj)
+    save_image(stitched, output_path_obj, quality=quality)
+    
+    if progress_callback:
+        progress_callback(1.0, "Complete!")
     
     # Return result
     height, width = stitched.shape[:2]
@@ -83,6 +120,9 @@ def create_orthomosaic(
 
 def main(args: Iterable[str] | None = None) -> int:
     """Command-line interface for orthomosaic generation.
+    
+    This function provides backward compatibility with the legacy CLI.
+    For new code, consider using the autoflight.cli module directly.
     
     Args:
         args: Command-line arguments (defaults to sys.argv)
@@ -119,6 +159,13 @@ def main(args: Iterable[str] | None = None) -> int:
         help="Disable parallel image loading (slower but uses less memory)"
     )
     parser.add_argument(
+        "--quality",
+        type=int,
+        default=95,
+        metavar="Q",
+        help="JPEG quality setting, 1-100 (default: 95)"
+    )
+    parser.add_argument(
         "-v", "--verbose",
         action="store_true",
         help="Enable verbose output"
@@ -142,6 +189,7 @@ def main(args: Iterable[str] | None = None) -> int:
             parallel=not parsed.no_parallel,
             verbose=parsed.verbose,
             mode=parsed.mode,
+            quality=parsed.quality,
         )
         
         if not parsed.quiet:
@@ -153,6 +201,12 @@ def main(args: Iterable[str] | None = None) -> int:
         
         return 0
         
+    except AutoflightError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        if parsed.verbose:
+            import traceback
+            traceback.print_exc()
+        return 1
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         if parsed.verbose:
