@@ -63,7 +63,7 @@ def stitch_images(
     if progress_callback:
         progress_callback(0.6, "Feature detection and matching...")
     
-    status, stitched = stitcher.stitch(list(images))
+    status, stitched = stitcher.stitch(images)
     
     # Check result
     if status != cv2.Stitcher_OK:
