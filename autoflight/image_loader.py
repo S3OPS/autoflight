@@ -171,7 +171,9 @@ def load_images(
                         progress = completed / len(image_paths)
                         progress_callback(progress * 0.5, f"Loaded {completed}/{len(image_paths)} images")
                 except Exception as e:
-                    logger.error(f"Failed to load image: {e}")
+                    index = futures[future]
+                    failed_path = image_paths[index]
+                    logger.error(f"Failed to load image {failed_path}: {e}")
                     raise
             if any(image is None for image in images_by_index):
                 raise ImageLoadError("Failed to load one or more images")
