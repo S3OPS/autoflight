@@ -175,8 +175,6 @@ def load_images(
                     failed_path = image_paths[index]
                     logger.error(f"Failed to load image {failed_path}: {e}")
                     raise
-            if any(image is None for image in images_by_index):
-                raise ImageLoadError("Failed to load one or more images")
             images = cast(List[np.ndarray], images_by_index)
     else:
         logger.debug("Loading images sequentially")
