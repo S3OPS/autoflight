@@ -5,7 +5,7 @@ from __future__ import annotations
 import concurrent.futures
 import logging
 from pathlib import Path
-from typing import List, Optional, Callable
+from typing import List, Optional, Callable, cast
 
 import cv2
 import numpy as np
@@ -152,9 +152,6 @@ def load_images(
     if progress_callback:
         progress_callback(0.0, f"Loading {len(image_paths)} images...")
     
-    # Load images
-    images: List[np.ndarray] = []
-    
     if parallel and len(image_paths) > 1:
         logger.debug(f"Loading images in parallel with {max_workers} workers")
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -162,19 +159,26 @@ def load_images(
                 executor.submit(load_single_image, path, validate_security, limits): i
                 for i, path in enumerate(image_paths)
             }
-            
-            for i, future in enumerate(concurrent.futures.as_completed(futures)):
+            images_by_index: List[Optional[np.ndarray]] = [None] * len(image_paths)
+            completed = 0
+            for future in concurrent.futures.as_completed(futures):
                 try:
                     image = future.result()
-                    images.append(image)
+                    index = futures[future]
+                    images_by_index[index] = image
+                    completed += 1
                     if progress_callback:
-                        progress = (i + 1) / len(image_paths)
-                        progress_callback(progress * 0.5, f"Loaded {i + 1}/{len(image_paths)} images")
+                        progress = completed / len(image_paths)
+                        progress_callback(progress * 0.5, f"Loaded {completed}/{len(image_paths)} images")
                 except Exception as e:
                     logger.error(f"Failed to load image: {e}")
                     raise
+            if any(image is None for image in images_by_index):
+                raise ImageLoadError("Failed to load one or more images")
+            images = cast(List[np.ndarray], images_by_index)
     else:
         logger.debug("Loading images sequentially")
+        images = []
         for i, path in enumerate(image_paths):
             image = load_single_image(path, validate_security, limits)
             images.append(image)

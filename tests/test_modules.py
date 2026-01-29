@@ -89,12 +89,18 @@ class TestImageLoader(unittest.TestCase):
         """Test loading multiple images in parallel."""
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
-            _write_image(temp_path / "img1.jpg", _create_test_image(seed=1))
-            _write_image(temp_path / "img2.jpg", _create_test_image(seed=2))
-            _write_image(temp_path / "img3.jpg", _create_test_image(seed=3))
+            image_one = _create_test_image(seed=1)
+            image_two = _create_test_image(seed=2)
+            image_three = _create_test_image(seed=3)
+            _write_image(temp_path / "img1.png", image_one)
+            _write_image(temp_path / "img2.png", image_two)
+            _write_image(temp_path / "img3.png", image_three)
             
             images = load_images(temp_path, parallel=True)
             self.assertEqual(len(images), 3)
+            np.testing.assert_array_equal(images[0], image_one)
+            np.testing.assert_array_equal(images[1], image_two)
+            np.testing.assert_array_equal(images[2], image_three)
     
     def test_load_images_no_images(self) -> None:
         """Test loading from empty directory fails."""
