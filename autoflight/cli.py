@@ -36,7 +36,7 @@ def create_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "output_path",
         type=Path,
-        help="Path where to save the orthomosaic image"
+        help="Path where to save the orthomosaic image (supports .jpg, .jpeg, .png, .tif, .tiff, .html)"
     )
     
     # Stitching options

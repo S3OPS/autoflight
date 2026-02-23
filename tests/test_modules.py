@@ -14,7 +14,7 @@ from autoflight.image_loader import (
     validate_path,
 )
 from autoflight.stitcher import stitch_images
-from autoflight.output import save_image
+from autoflight.output import save_image, save_html
 from autoflight.exceptions import (
     ImageLoadError,
     ValidationError,
@@ -206,6 +206,91 @@ class TestOutput(unittest.TestCase):
             # Test with custom quality
             save_image(image, output_path, quality=50)
             self.assertTrue(output_path.exists())
+    
+    def test_save_image_html(self) -> None:
+        """Test that save_image delegates to HTML output for .html extension."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            output_path = temp_path / "output.html"
+            image = _create_test_image()
+            
+            save_image(image, output_path)
+            self.assertTrue(output_path.exists())
+            content = output_path.read_text(encoding="utf-8")
+            self.assertIn("<!DOCTYPE html>", content)
+            self.assertIn("data:image/png;base64,", content)
+
+
+class TestHtmlOutput(unittest.TestCase):
+    """Tests for save_html function."""
+    
+    def test_save_html_creates_file(self) -> None:
+        """Test that save_html creates an HTML file."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            output_path = temp_path / "report.html"
+            image = _create_test_image()
+            
+            save_html(image, output_path)
+            self.assertTrue(output_path.exists())
+    
+    def test_save_html_content(self) -> None:
+        """Test that the generated HTML contains expected structure."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            output_path = temp_path / "report.html"
+            image = _create_test_image(size=(50, 80))
+            
+            save_html(image, output_path, title="Test Mosaic")
+            content = output_path.read_text(encoding="utf-8")
+            
+            self.assertIn("<!DOCTYPE html>", content)
+            self.assertIn("<title>Test Mosaic</title>", content)
+            self.assertIn("data:image/png;base64,", content)
+            self.assertIn("80", content)  # width
+            self.assertIn("50", content)  # height
+    
+    def test_save_html_creates_dirs(self) -> None:
+        """Test that save_html creates parent directories."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            output_path = temp_path / "subdir" / "report.html"
+            image = _create_test_image()
+            
+            save_html(image, output_path, create_dirs=True)
+            self.assertTrue(output_path.exists())
+    
+    def test_save_html_no_create_dirs_fails(self) -> None:
+        """Test that save_html fails when parent dir is missing and create_dirs is False."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            output_path = temp_path / "nonexistent" / "report.html"
+            image = _create_test_image()
+            
+            with self.assertRaises(ValidationError):
+                save_html(image, output_path, create_dirs=False)
+    
+    def test_save_html_empty_image_fails(self) -> None:
+        """Test that save_html raises ValidationError for empty/None image."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            output_path = temp_path / "report.html"
+            
+            with self.assertRaises(ValidationError):
+                save_html(None, output_path)
+    
+    def test_save_html_title_escaped(self) -> None:
+        """Test that HTML special characters in title are escaped."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            output_path = temp_path / "report.html"
+            image = _create_test_image()
+            
+            save_html(image, output_path, title="<script>alert('xss')</script>")
+            content = output_path.read_text(encoding="utf-8")
+            
+            self.assertNotIn("<script>", content)
+            self.assertIn("&lt;script&gt;", content)
 
 
 if __name__ == "__main__":
