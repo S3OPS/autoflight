@@ -80,6 +80,10 @@ print(f"Size: {result.size[0]}x{result.size[1]}")
 Input: `.jpg`, `.jpeg`, `.png`, `.tif`, `.tiff`
 Output: Any format supported by OpenCV (typically `.jpg`, `.png`, `.tif`)
 
+> **Where to put images:** Copy your aerial photos into any local directory, then pass that
+> directory path as the first argument. The `sample_images/` folder in the repo is ready to
+> use for testing — just drop images there and run `autoflight sample_images output/result.jpg`.
+
 ## Requirements
 
 - Python 3.8+
