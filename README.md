@@ -13,6 +13,98 @@ A professional-grade Python application for generating orthomosaic images from a
 - 🔒 **Security Focused** - Input validation and secure dependency management
 - 🎯 **Modular Architecture** - Clean separation of concerns for maintainability
 
+## 📁 Image Input Guide: Where to Put Your Images
+
+This section explains **exactly** where to place your images and how to organize them for processing.
+
+### Step 1 — Choose an Input Directory
+
+You have two options:
+
+**Option A: Use the included `sample_images/` directory** *(great for testing)*
+
+The repository already ships with three overlapping aerial sample images ready to use:
+
+```
+autoflight/
+└── sample_images/          ← Drop your images here for quick testing
+    ├── sample_01.jpg       (included — 3 overlapping samples)
+    ├── sample_02.jpg       (included)
+    └── sample_03.jpg       (included)
+```
+
+Simply copy your own `.jpg`, `.jpeg`, `.png`, `.tif`, or `.tiff` files into `sample_images/` alongside the existing samples (or replace them), then run:
+
+```bash
+autoflight sample_images output/orthomosaic.jpg
+```
+
+**Option B: Create a dedicated directory anywhere on your system** *(recommended for real projects)*
+
+```bash
+# Create a folder for your drone photos
+mkdir my_drone_photos
+
+# Copy your images into it
+cp /path/to/drone/downloads/*.jpg my_drone_photos/
+
+# Run autoflight, pointing at your folder
+autoflight my_drone_photos output/orthomosaic.jpg
+```
+
+### Step 2 — Supported File Formats
+
+Place any of the following file types in your input directory:
+
+| Format | Extension(s) | Notes |
+|--------|-------------|-------|
+| JPEG | `.jpg`, `.jpeg` | ✅ Recommended — most common drone format |
+| PNG | `.png` | Lossless, but larger file size |
+| TIFF | `.tif`, `.tiff` | Professional format, supports georeferencing |
+
+> **Tip:** All other file types (`.txt`, `.xml`, `.log`, GPS logs, etc.) in the same folder are **automatically ignored** — no need to move them.
+
+### Step 3 — Image Requirements for Best Results
+
+For successful stitching your images must:
+
+- **Overlap by 30–70%** — Each photo should share content with the photos next to it. Drone survey missions typically use 60–80% front overlap and 30–60% side overlap.
+- **Cover the same scene** — All images should be of the same geographic area taken in one flight session.
+- **Have consistent exposure** — Avoid mixing heavily over-exposed or under-exposed shots with normal ones. Bright overcast days produce the best results.
+- **Be in focus** — Blurry or motion-blurred images will cause stitching failures.
+- **Have at least 2 images** — A single image is returned unchanged; you need at least 2 overlapping images to generate a mosaic.
+
+### Recommended Project Layout
+
+```
+my_project/
+├── input_images/           ← All source aerial photos go here
+│   ├── DJI_0001.jpg
+│   ├── DJI_0002.jpg
+│   ├── DJI_0003.jpg
+│   └── ...                 (any mix of .jpg/.png/.tif is fine)
+└── output/                 ← Created automatically by autoflight
+    └── orthomosaic.jpg     ← Final stitched result
+```
+
+```bash
+# Process your images
+autoflight input_images output/orthomosaic.jpg
+```
+
+### Quick Validation (Dry Run)
+
+Before committing to a long stitching job, check that autoflight can see your images:
+
+```bash
+# Validate your input directory without processing
+autoflight input_images output/orthomosaic.jpg --dry-run
+```
+
+This prints the number of images found and the output path that would be used, without doing any actual stitching.
+
+---
+
 ## Quick Start
 
 ### Zero-Setup Run (Auto-Install Dependencies)

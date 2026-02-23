@@ -94,7 +94,7 @@ result = create_orthomosaic(
 
 #### 2.4 Quick Wins
 - [x] Added `__all__` exports to all modules
-- [ ] Add `py.typed` marker file for PEP 561 compliance
+- [x] Add `py.typed` marker file for PEP 561 compliance
 - [x] Standardized docstring format (Google style)
 
 ### Remaining Tasks

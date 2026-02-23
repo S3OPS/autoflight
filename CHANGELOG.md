@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-02-23
+
+### Added - Security, Configuration & CLI Enhancements
+- **Custom Exception Hierarchy** (`autoflight/exceptions.py`) — Structured error handling with
+  `AutoflightError`, `ImageLoadError`, `StitchingError`, `OutputError`, `ValidationError`,
+  and `SecurityError`
+- **Security Module** (`autoflight/security.py`) — File size, image dimension, and file count
+  validation with configurable `SecurityLimits`
+- **Configuration Module** (`autoflight/config.py`) — Centralized configuration with environment
+  variable support (`AUTOFLIGHT_PARALLEL`, `AUTOFLIGHT_MAX_WORKERS`, `AUTOFLIGHT_JPEG_QUALITY`,
+  `AUTOFLIGHT_MODE`, `AUTOFLIGHT_VERBOSE`)
+- **Dedicated CLI Module** (`autoflight/cli.py`) — Enhanced CLI separated from core API, with
+  `--progress`, `--dry-run`, `--quality`, and `--workers` flags
+- **Progress Callbacks** — All processing functions accept an optional `progress_callback`
+  parameter for tracking progress programmatically
+- **JPEG/PNG Quality Settings** — Configurable JPEG quality (`--quality`, 1–100) and PNG
+  compression level in output module
+- **PEP 561 compliance** — Added `py.typed` marker file
+
+### Changed
+- `create_orthomosaic()` now accepts `quality` and `progress_callback` parameters
+- `AutoflightConfig.from_env()` reads all configuration from environment variables
+- Dual entry points: both `autoflight` and `autoflight-cli` commands are available
+
+### Security
+- Path traversal protection in `validate_path_security()`
+- Configurable file size limits (default: 500 MB per image)
+- Configurable image dimension limits (default: 100 megapixels)
+- Configurable file count limits (default: 1000 files per run)
+
+### Breaking Changes
+None — all existing code continues to work.
+
 ## [1.1.0] - 2026-01-27
 
 ### Added - Optimization & Modularization
