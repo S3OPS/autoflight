@@ -36,7 +36,7 @@ def create_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "output_path",
         type=Path,
-        help="Path where to save the orthomosaic image"
+        help="Path where to save the orthomosaic image (supports .jpg, .jpeg, .png, .tif, .tiff, .html)"
     )
     
     # Stitching options
@@ -230,18 +230,67 @@ def run(args: Iterable[str] | None = None) -> int:
         return 1
 
 
-def main(args: Iterable[str] | None = None) -> int:
-    """Main entry point for the CLI.
-    
-    This is the function called by the `autoflight` command.
-    
+def run_serve(args: Iterable[str] | None = None) -> int:
+    """Run the web interface server.
+
     Args:
-        args: Command-line arguments (defaults to sys.argv)
-        
+        args: Arguments for the serve subcommand (defaults to sys.argv after 'serve')
+
     Returns:
         Exit code (0 for success, non-zero for failure)
     """
-    return run(args)
+    from autoflight.server import run_server
+
+    parser = argparse.ArgumentParser(
+        description="Start the autoflight web interface server",
+        prog="autoflight serve",
+        epilog="Example: %(prog)s --port 8080",
+    )
+    parser.add_argument(
+        "--host",
+        default="localhost",
+        metavar="HOST",
+        help="Hostname to bind to (default: localhost)",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=8080,
+        metavar="PORT",
+        help="TCP port to listen on (default: 8080)",
+    )
+    parser.add_argument(
+        "--no-open",
+        action="store_true",
+        help="Do not automatically open a browser window",
+    )
+
+    parsed = parser.parse_args(list(args) if args is not None else [])
+    try:
+        run_server(host=parsed.host, port=parsed.port, open_browser=not parsed.no_open)
+        return 0
+    except OSError as e:
+        print(f"Error: Could not start server: {e}", file=sys.stderr)
+        return 1
+
+
+def main(args: Iterable[str] | None = None) -> int:
+    """Main entry point for the CLI.
+
+    Dispatches to the ``serve`` subcommand when the first argument is
+    ``"serve"``; otherwise runs the standard stitching pipeline.
+
+    Args:
+        args: Command-line arguments (defaults to sys.argv)
+
+    Returns:
+        Exit code (0 for success, non-zero for failure)
+    """
+    argv = list(args) if args is not None else sys.argv[1:]
+    if argv and argv[0] == "serve":
+        return run_serve(argv[1:])
+    # Pass None so argparse uses sys.argv when args was not supplied explicitly
+    return run(args if args is not None else None)
 
 
 if __name__ == "__main__":

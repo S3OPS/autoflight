@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Autoflight – Orthomosaic Generator</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ── */
+    header {
+      background: #1e293b;
+      border-bottom: 1px solid #334155;
+      padding: 1rem 2rem;
+    }
+    header h1 { font-size: 1.5rem; font-weight: 700; color: #38bdf8; }
+    header p  { color: #94a3b8; font-size: 0.875rem; margin-top: 0.125rem; }
+
+    /* ── Layout ── */
+    main {
+      flex: 1;
+      max-width: 920px;
+      width: 100%;
+      margin: 2rem auto;
+      padding: 0 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* ── Notice banner ── */
+    .notice {
+      padding: 0.875rem 1.25rem;
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+      line-height: 1.6;
+      display: none;
+    }
+    .notice.warning {
+      background: #451a03;
+      border: 1px solid #92400e;
+      color: #fbbf24;
+    }
+    .notice code {
+      background: rgba(0,0,0,0.35);
+      padding: 0.1rem 0.4rem;
+      border-radius: 0.25rem;
+      font-family: monospace;
+      font-size: 0.95em;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+    }
+    .card h2 {
+      font-size: 0.9375rem;
+      font-weight: 600;
+      color: #cbd5e1;
+      margin-bottom: 1rem;
+    }
+
+    /* ── Drop zone ── */
+    #dropzone {
+      border: 2px dashed #475569;
+      border-radius: 0.5rem;
+      padding: 2.5rem 1.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      user-select: none;
+    }
+    #dropzone:hover, #dropzone.drag-over {
+      border-color: #38bdf8;
+      background: rgba(56, 189, 248, 0.05);
+    }
+    #dropzone .dz-icon { font-size: 2rem; margin-bottom: 0.625rem; }
+    #dropzone p { color: #94a3b8; line-height: 1.7; }
+    #dropzone strong { color: #38bdf8; }
+    #dropzone small { font-size: 0.8rem; color: #64748b; }
+
+    /* ── Thumbnail grid ── */
+    #thumb-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+      gap: 0.625rem;
+      margin-top: 1rem;
+    }
+    .thumb {
+      position: relative;
+      aspect-ratio: 1;
+      border-radius: 0.375rem;
+      overflow: hidden;
+      background: #0f172a;
+    }
+    .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .thumb .thumb-name {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      background: rgba(0,0,0,0.72);
+      color: #cbd5e1;
+      font-size: 10px;
+      padding: 2px 5px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .thumb-remove {
+      position: absolute;
+      top: 4px; right: 4px;
+      background: rgba(0,0,0,0.65);
+      color: #f1f5f9;
+      border: none;
+      border-radius: 50%;
+      width: 20px; height: 20px;
+      font-size: 11px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+    }
+    .thumb-remove:hover { background: #dc2626; }
+
+    /* ── Settings ── */
+    .settings-row {
+      display: flex;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .setting { flex: 1; min-width: 180px; }
+    label {
+      display: block;
+      font-size: 0.8125rem;
+      color: #94a3b8;
+      margin-bottom: 0.375rem;
+    }
+    select {
+      width: 100%;
+      background: #0f172a;
+      color: #e2e8f0;
+      border: 1px solid #475569;
+      border-radius: 0.375rem;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.875rem;
+    }
+    select:focus { outline: 2px solid #38bdf8; }
+    input[type=range] {
+      width: 100%;
+      accent-color: #38bdf8;
+      margin-top: 0.375rem;
+    }
+
+    /* ── Buttons ── */
+    .btn {
+      padding: 0.625rem 1.375rem;
+      border-radius: 0.5rem;
+      border: none;
+      font-size: 0.9375rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, opacity 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .btn-primary { background: #0ea5e9; color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: #38bdf8; }
+    .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-outline {
+      background: transparent;
+      border: 1px solid #475569;
+      color: #94a3b8;
+    }
+    .btn-outline:hover { border-color: #38bdf8; color: #38bdf8; }
+
+    /* ── Actions row ── */
+    .actions-card {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    #file-count { color: #64748b; font-size: 0.875rem; }
+
+    /* ── Status box ── */
+    #status-box {
+      padding: 0.75rem 1rem;
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+      display: none;
+    }
+    #status-box.info  { background: #0c4a6e; color: #7dd3fc; border: 1px solid #0369a1; }
+    #status-box.error { background: #450a0a; color: #fca5a5; border: 1px solid #991b1b; }
+    #status-box.ok    { background: #052e16; color: #86efac; border: 1px solid #166534; }
+
+    /* ── Result ── */
+    #result-card { display: none; }
+    #result-img { max-width: 100%; border-radius: 0.5rem; display: block; }
+    .result-actions { display: flex; gap: 0.75rem; margin-top: 1rem; flex-wrap: wrap; }
+
+    /* ── Spinner ── */
+    .spinner {
+      width: 15px; height: 15px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      display: inline-block;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      padding: 1.5rem;
+      color: #475569;
+      font-size: 0.8rem;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>✈️ Autoflight</h1>
+  <p>Orthomosaic Generator — upload overlapping aerial photos and stitch them into a panorama</p>
+</header>
+
+<main>
+
+  <!-- Server warning (shown when HTML is opened without the server running) -->
+  <div id="server-notice" class="notice">
+    ⚠️ The Autoflight server does not appear to be running. Start it in a terminal with:
+    <code>autoflight serve</code>
+    then refresh this page, or navigate to <strong>http://localhost:8080</strong>.
+  </div>
+
+  <!-- Upload card -->
+  <div class="card">
+    <h2>📁 Upload Images</h2>
+    <div id="dropzone" role="button" tabindex="0" aria-label="Upload images">
+      <div class="dz-icon">🖼️</div>
+      <p>Drag &amp; drop your aerial images here<br>or <strong>click to browse files</strong></p>
+      <p><small>Accepts&nbsp;.jpg&nbsp;&nbsp;.jpeg&nbsp;&nbsp;.png&nbsp;&nbsp;.tif&nbsp;&nbsp;.tiff
+        &nbsp;·&nbsp; Select at least 2 overlapping images</small></p>
+    </div>
+    <input type="file" id="file-input" multiple accept=".jpg,.jpeg,.png,.tif,.tiff"
+           style="display:none" aria-hidden="true">
+    <div id="thumb-grid" role="list" aria-label="Selected images"></div>
+  </div>
+
+  <!-- Settings card -->
+  <div class="card">
+    <h2>⚙️ Settings</h2>
+    <div class="settings-row">
+      <div class="setting">
+        <label for="mode">Stitching Mode</label>
+        <select id="mode">
+          <option value="panorama">Panorama (standard aerial)</option>
+          <option value="scans">Scans (flat / document)</option>
+        </select>
+      </div>
+      <div class="setting">
+        <label for="quality">Download Quality: <strong id="quality-label">95</strong>/100</label>
+        <input type="range" id="quality" min="1" max="100" value="95" aria-label="JPEG quality">
+      </div>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="card actions-card">
+    <button id="process-btn" class="btn btn-primary" disabled>
+      Generate Orthomosaic
+    </button>
+    <span id="file-count">No images selected</span>
+  </div>
+
+  <!-- Status -->
+  <div id="status-box" role="status" aria-live="polite"></div>
+
+  <!-- Result -->
+  <div id="result-card" class="card">
+    <h2>🗺️ Result</h2>
+    <img id="result-img" src="" alt="Stitched orthomosaic">
+    <div class="result-actions">
+      <button class="btn btn-outline" onclick="downloadPng()">⬇️ Download PNG</button>
+      <button class="btn btn-outline" onclick="downloadHtml()">⬇️ Download HTML Report</button>
+    </div>
+  </div>
+
+</main>
+
+<footer>Autoflight &nbsp;·&nbsp; Powered by OpenCV &amp; Python</footer>
+
+<script>'use strict';
+
+// When the HTML is opened directly as a file:// URL, point API calls at the
+// local server.  When served by the Python server itself, use relative paths.
+var API_BASE = window.location.protocol === 'file:' ? 'http://localhost:8080' : '';
+
+// ── State ──────────────────────────────────────────────────────────────────────
+var selectedFiles = new Map(); // filename → { file, dataUrl }
+var resultDataUrl = null;
+var resultMeta    = null; // { width, height, image_count }
+
+// ── DOM refs ───────────────────────────────────────────────────────────────────
+var dropzone     = document.getElementById('dropzone');
+var fileInput    = document.getElementById('file-input');
+var thumbGrid    = document.getElementById('thumb-grid');
+var processBtn   = document.getElementById('process-btn');
+var fileCount    = document.getElementById('file-count');
+var statusBox    = document.getElementById('status-box');
+var qualityInput = document.getElementById('quality');
+var qualityLabel = document.getElementById('quality-label');
+var resultCard   = document.getElementById('result-card');
+var resultImg    = document.getElementById('result-img');
+var serverNotice = document.getElementById('server-notice');
+
+// ── Server connectivity check ──────────────────────────────────────────────────
+(function checkServer() {
+  var opts = { method: 'GET' };
+  if (typeof AbortSignal !== 'undefined' && AbortSignal.timeout) {
+    opts.signal = AbortSignal.timeout(3000);
+  }
+  fetch(API_BASE + '/', opts)
+    .then(function(r) {
+      if (r.ok) serverNotice.style.display = 'none';
+      else throw new Error('not ok');
+    })
+    .catch(function() {
+      serverNotice.className = 'notice warning';
+      serverNotice.style.display = 'block';
+    });
+})();
+
+// ── Drag-and-drop ─────────────────────────────────────────────────────────────
+dropzone.addEventListener('click', function() { fileInput.click(); });
+dropzone.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); }
+});
+dropzone.addEventListener('dragover', function(e) {
+  e.preventDefault();
+  dropzone.classList.add('drag-over');
+});
+dropzone.addEventListener('dragleave', function(e) {
+  if (!dropzone.contains(e.relatedTarget)) dropzone.classList.remove('drag-over');
+});
+dropzone.addEventListener('drop', function(e) {
+  e.preventDefault();
+  dropzone.classList.remove('drag-over');
+  addFiles(Array.prototype.slice.call(e.dataTransfer.files));
+});
+
+fileInput.addEventListener('change', function() {
+  addFiles(Array.prototype.slice.call(fileInput.files));
+  fileInput.value = '';
+});
+
+qualityInput.addEventListener('input', function() {
+  qualityLabel.textContent = qualityInput.value;
+});
+
+// ── File handling ──────────────────────────────────────────────────────────────
+var ACCEPTED = /\.(jpe?g|png|tiff?)$/i;
+
+function addFiles(files) {
+  files.forEach(function(file) {
+    if (!ACCEPTED.test(file.name)) return;
+    if (selectedFiles.has(file.name)) return;
+    var reader = new FileReader();
+    reader.onload = function(evt) {
+      selectedFiles.set(file.name, { file: file, dataUrl: evt.target.result });
+      renderThumbs();
+      updateActions();
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function removeFile(name) {
+  selectedFiles.delete(name);
+  renderThumbs();
+  updateActions();
+}
+
+function renderThumbs() {
+  thumbGrid.innerHTML = '';
+  selectedFiles.forEach(function(val, name) {
+    var div = document.createElement('div');
+    div.className = 'thumb';
+    div.setAttribute('role', 'listitem');
+    var img = document.createElement('img');
+    img.src = val.dataUrl;
+    img.alt = escText(name);
+    var btn = document.createElement('button');
+    btn.className = 'thumb-remove';
+    btn.title = 'Remove';
+    btn.textContent = '✕';
+    btn.onclick = (function(n) { return function() { removeFile(n); }; })(name);
+    var label = document.createElement('div');
+    label.className = 'thumb-name';
+    label.textContent = name;
+    div.appendChild(img);
+    div.appendChild(btn);
+    div.appendChild(label);
+    thumbGrid.appendChild(div);
+  });
+}
+
+function updateActions() {
+  var n = selectedFiles.size;
+  if (n === 0) {
+    fileCount.textContent = 'No images selected';
+    processBtn.disabled = true;
+  } else if (n === 1) {
+    fileCount.textContent = '1 image selected — need at least 2 for stitching';
+    processBtn.disabled = true;
+  } else {
+    fileCount.textContent = n + ' images selected';
+    processBtn.disabled = false;
+  }
+}
+
+// ── Process ────────────────────────────────────────────────────────────────────
+processBtn.addEventListener('click', function() {
+  var mode    = document.getElementById('mode').value;
+  var quality = parseInt(qualityInput.value, 10);
+  var images  = [];
+  selectedFiles.forEach(function(v) { images.push(v.dataUrl); });
+
+  processBtn.disabled = true;
+  processBtn.innerHTML = '<span class="spinner"></span> Processing\u2026';
+  resultCard.style.display = 'none';
+  showStatus('\u23f3 Sending images to server and stitching\u2026 this may take a minute.', 'info');
+
+  fetch(API_BASE + '/api/stitch', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ images: images, mode: mode, quality: quality }),
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (!data.success) {
+      showStatus('\u274c ' + data.error, 'error');
+      return;
+    }
+    resultDataUrl = 'data:image/png;base64,' + data.image;
+    resultMeta    = { width: data.width, height: data.height, image_count: data.image_count };
+    resultImg.src = resultDataUrl;
+    resultCard.style.display = 'block';
+    resultCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    showStatus(
+      '\u2705 Orthomosaic created from ' + data.image_count + ' images \u2014 '
+      + data.width + '\u00d7' + data.height + ' px',
+      'ok'
+    );
+  })
+  .catch(function(err) {
+    showStatus('\u274c Request failed: ' + err.message + ' \u2014 is the server running?', 'error');
+  })
+  .finally(function() {
+    processBtn.disabled = false;
+    processBtn.textContent = 'Generate Orthomosaic';
+    updateActions();
+  });
+});
+
+// ── Status helpers ─────────────────────────────────────────────────────────────
+function showStatus(msg, type) {
+  statusBox.textContent = msg;
+  statusBox.className = 'status-box ' + type;
+  statusBox.style.display = 'block';
+}
+
+// ── Downloads ──────────────────────────────────────────────────────────────────
+function downloadPng() {
+  if (!resultDataUrl) return;
+  triggerDownload(resultDataUrl, 'orthomosaic.png');
+}
+
+function downloadHtml() {
+  if (!resultDataUrl || !resultMeta) return;
+  var w = resultMeta.width, h = resultMeta.height;
+  var ts = new Date().toUTCString();
+  var content = [
+    '<!DOCTYPE html><html lang="en"><head>',
+    '<meta charset="UTF-8">',
+    '<title>Orthomosaic</title>',
+    '<style>body{font-family:sans-serif;background:#f5f5f5;padding:20px}',
+    'h1{color:#333}.meta{color:#666;font-size:.9em;margin-bottom:1rem}',
+    'img{max-width:100%;border:1px solid #ccc;border-radius:4px}</style>',
+    '</head><body>',
+    '<h1>Orthomosaic</h1>',
+    '<p class="meta">Size: ' + w + '\u00d7' + h + ' px &bull; Generated: ' + escText(ts) + '</p>',
+    '<img src="' + escAttr(resultDataUrl) + '" alt="Orthomosaic">',
+    '</body></html>',
+  ].join('\n');
+  var blob = new Blob([content], { type: 'text/html' });
+  triggerDownload(URL.createObjectURL(blob), 'orthomosaic.html');
+}
+
+function triggerDownload(url, filename) {
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+// ── Minimal DOM-safe escaping ──────────────────────────────────────────────────
+function escText(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+function escAttr(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;');
+}
+</script>
+</body>
+</html>

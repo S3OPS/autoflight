@@ -27,13 +27,16 @@ dev = [
 ]
 
 [project.scripts]
-autoflight = "autoflight.orthomosaic:main"
+autoflight = "autoflight.cli:main"
 autoflight-cli = "autoflight.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["autoflight*"]
 exclude = ["tests*", "scripts*", "sample_images*"]
+
+[tool.setuptools.package-data]
+autoflight = ["web/*.html"]
 
 [tool.black]
 line-length = 100
