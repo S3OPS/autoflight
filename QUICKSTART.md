@@ -15,6 +15,18 @@ This single command does everything:
 
 ## Common Commands
 
+### Web Interface
+
+The easiest way to use Autoflight is the built-in browser UI:
+
+```bash
+autoflight serve          # opens http://localhost:8080 automatically
+# or
+make serve
+```
+
+Drag & drop your aerial images, choose settings, click **Generate Orthomosaic**, then download the result as PNG or a self-contained HTML report.
+
 ### Using Make
 
 ```bash
@@ -22,6 +34,7 @@ make help          # Show all available commands
 make setup         # Complete project setup
 make test          # Run all tests
 make demo          # Run demo with sample images
+make serve         # Start the web interface
 make all           # Setup, test, and demo
 make clean         # Remove temporary files
 ```
@@ -78,7 +91,7 @@ print(f"Size: {result.size[0]}x{result.size[1]}")
 ## Supported Formats
 
 Input: `.jpg`, `.jpeg`, `.png`, `.tif`, `.tiff`
-Output: Any format supported by OpenCV (typically `.jpg`, `.png`, `.tif`)
+Output: `.jpg`, `.jpeg`, `.png`, `.tif`, `.tiff`, `.html` (self-contained HTML report)
 
 > **Where to put images:** Copy your aerial photos into any local directory, then pass that
 > directory path as the first argument. The `sample_images/` folder in the repo is ready to
@@ -123,7 +136,11 @@ autoflight/
 ├── pyproject.toml           # Python package config
 ├── autoflight/              # Main package
 │   ├── __init__.py
-│   └── orthomosaic.py       # Core functionality
+│   ├── cli.py               # CLI entry point (incl. `serve` subcommand)
+│   ├── orthomosaic.py       # Core stitching API
+│   ├── server.py            # Built-in web server
+│   └── web/
+│       └── index.html       # Browser UI
 ├── tests/                   # Test suite
 ├── scripts/                 # Utility scripts
 └── sample_images/           # Demo images

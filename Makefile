@@ -1,4 +1,4 @@
-.PHONY: help install install-dev test lint format clean run demo setup all validate
+.PHONY: help install install-dev test lint format clean run demo setup all validate serve
 
 # Default target
 help:
@@ -14,6 +14,7 @@ help:
 	@echo "  make format       - Format code with black"
 	@echo "  make demo         - Run demo with sample images"
 	@echo "  make run          - Run the application (requires INPUT and OUTPUT env vars)"
+	@echo "  make serve        - Start the web interface at http://localhost:8080"
 	@echo "  make clean        - Clean temporary files and cache"
 	@echo "  make all          - Setup, test, and run demo"
 	@echo ""
@@ -95,6 +96,14 @@ run:
 		. .venv/bin/activate && python -m autoflight.orthomosaic $(INPUT) $(OUTPUT); \
 	else \
 		python -m autoflight.orthomosaic $(INPUT) $(OUTPUT); \
+	fi
+
+# Start the web interface
+serve:
+	@if [ -d ".venv" ]; then \
+		. .venv/bin/activate && autoflight serve; \
+	else \
+		autoflight serve; \
 	fi
 
 # Clean temporary files

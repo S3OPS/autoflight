@@ -105,6 +105,42 @@ This prints the number of images found and the output path that would be used, w
 
 ---
 
+## 🌐 Web Interface
+
+The easiest way to use Autoflight is through the built-in browser UI. Start the web server with:
+
+```bash
+autoflight serve
+```
+
+This opens `http://localhost:8080` in your browser automatically. From there you can:
+- **Drag & drop** your aerial images (or click to browse)
+- Choose a **stitching mode** (Panorama or Scans)
+- Adjust **download quality**
+- Click **Generate Orthomosaic** to stitch and preview the result
+- **Download** the result as a PNG or self-contained HTML report
+
+### Web Interface Options
+
+```bash
+autoflight serve                     # Start on default port 8080
+autoflight serve --port 9000         # Use a custom port
+autoflight serve --host 0.0.0.0      # Listen on all interfaces
+autoflight serve --no-open           # Don't open browser automatically
+```
+
+### HTML Report Output
+
+You can also save an orthomosaic as a standalone HTML file directly from the CLI:
+
+```bash
+autoflight /path/to/images output/report.html
+```
+
+The resulting `.html` file is fully self-contained (the image is embedded as base64) and can be opened in any browser without a running server.
+
+---
+
 ## Quick Start
 
 ### Zero-Setup Run (Auto-Install Dependencies)
